@@ -71,3 +71,38 @@ for(feature in clinical_features)
          main = sprintf("Histogram of %s", feature))
   }
 }
+
+#data visualization with lifestyle data
+lifestyle_features <- colnames(PCOS_data)[!colnames(PCOS_data) %in% c(demographic_features, clinical_features, "PCOS (Y/N)")]
+lifestyle_data <- PCOS_data[, lifestyle_features]
+
+for(feature in lifestyle_features)
+{
+  if(feature %in% categorical_features)
+  {
+    yes_has_pcos_freq <- nrow(PCOS_data[(PCOS_data$`PCOS (Y/N)` == 1 & PCOS_data[, feature] == 1),])
+    no_has_pcos_freq <- nrow(PCOS_data[(PCOS_data$`PCOS (Y/N)` == 1 & PCOS_data[, feature] == 0),])
+    
+    yes_no_pcos_freq <- nrow(PCOS_data[(PCOS_data$`PCOS (Y/N)` == 0 & PCOS_data[, feature] == 1),])
+    no_no_pcos_freq <- nrow(PCOS_data[(PCOS_data$`PCOS (Y/N)` == 0 & PCOS_data[, feature] == 0),])
+    
+    values <- matrix(c(yes_has_pcos_freq, no_has_pcos_freq, yes_no_pcos_freq, no_no_pcos_freq), ncol = 2, byrow = TRUE)
+    
+    barplot(values, col = c("red", "blue"), names.arg = c("Yes", "No"), xlab = feature, ylab = "Frequency", main = sprintf("Distribution of observations with %s", feature))
+    legend('topleft', c("Has PCOS", "Doesn't have PCOS"), fill=c("red", "blue"))
+  }
+  else
+  {
+    plot(x = as.factor(Y),
+         y = PCOS_data[, feature],
+         xlab = "PCOS",
+         ylab = feature,
+         col = c("blue", "red"),
+         main = sprintf("Box Plot of %s", feature))
+    hist(PCOS_data[, feature],
+         xlab = feature,
+         ylab = "Frequency",
+         col = "blue",
+         main = sprintf("Histogram of %s", feature))
+  }
+}
