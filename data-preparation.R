@@ -51,3 +51,6 @@ PCOS_data <- PCOS_data[, !colnames(PCOS_data) %in% categorical_features]
 
 #column bind one_hot_data with PCOS_data
 PCOS_data <- cbind(PCOS_data, one_hot_data)
+
+#update categorical and numerical features
+categorical_features <- colnames(one_hot_data)
