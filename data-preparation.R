@@ -17,7 +17,7 @@ PCOS_data <- PCOS_data[, !names(PCOS_data) %in% uncessary_features]
 
 #one-hot encoding to categorical features
 #categorical data: PCOS (Y/N), Blood Group, Pregnant(Y/N), Weight gain(Y/N), hair growth(Y/N), Skin darkening (Y/N), Hair loss(Y/N), Pimples(Y/N), Fast food (Y/N), Reg.Exercise(Y/N)
-categorical_features <- c("PCOS (Y/N)", "Blood Group", "Pregnant(Y/N)", "Weight gain(Y/N)", "hair growth(Y/N)", "Skin darkening (Y/N)", "Hair loss(Y/N)", "Pimples(Y/N)", "Fast food (Y/N)", "Reg.Exercise(Y/N)")
+categorical_features <- c("Blood Group", "Pregnant(Y/N)", "Weight gain(Y/N)", "hair growth(Y/N)", "Skin darkening (Y/N)", "Hair loss(Y/N)", "Pimples(Y/N)", "Fast food (Y/N)", "Reg.Exercise(Y/N)")
 
 #convert to factors
 for(feature in categorical_features)
@@ -27,4 +27,9 @@ for(feature in categorical_features)
 
 #one-hot encoding
 one_hot_data <- model.matrix(~ . - 1, PCOS_data[categorical_features])
-print(PCOS_data[categorical_features])
+
+#remove categorical data in PCOS_data that will be replaced with one-hot-encoded data
+PCOS_data <- PCOS_data[, !colnames(PCOS_data) %in% categorical_features]
+PCOS_data <- drop_na(PCOS_data)
+#column bind one_hot_data with PCOS_data
+PCOS_data <- cbind(PCOS_data, one_hot_data)
