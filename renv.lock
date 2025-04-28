@@ -2128,6 +2128,23 @@
       "Maintainer": "Deepayan Sarkar <deepayan.sarkar@r-project.org>",
       "Repository": "CRAN"
     },
+    "leaps": {
+      "Package": "leaps",
+      "Version": "3.2",
+      "Source": "Repository",
+      "Title": "Regression Subset Selection",
+      "Author": "Thomas Lumley based on Fortran code by Alan Miller",
+      "Description": "Regression subset selection, including exhaustive search.",
+      "Depends": [],
+      "Suggests": [
+        "biglm"
+      ],
+      "License": "GPL (>= 2)",
+      "Maintainer": "Thomas Lumley <t.lumley@auckland.ac.nz>",
+      "NeedsCompilation": "yes",
+      "Repository": "CRAN",
+      "Encoding": "UTF-8"
+    },
     "lifecycle": {
       "Package": "lifecycle",
       "Version": "1.0.4",
