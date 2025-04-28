@@ -17,10 +17,8 @@ for(feature in demographic_features)
     no_no_pcos_freq <- nrow(PCOS_data[(PCOS_data$`PCOS (Y/N)` == 0 & PCOS_data[, feature] == 0),])
     
     values <- matrix(c(yes_has_pcos_freq, no_has_pcos_freq, yes_no_pcos_freq, no_no_pcos_freq), ncol = 2, byrow = TRUE)
-    print(values)
-    print(c(yes_has_pcos_freq, no_has_pcos_freq, yes_no_pcos_freq, no_no_pcos_freq))
     
-    barplot(values, col = c("red", "blue"), names.arg = c("Yes", "No"), xlab = feature, ylab = "Frequency")
+    barplot(values, col = c("red", "blue"), names.arg = c("Yes", "No"), xlab = feature, ylab = "Frequency", main = sprintf("Distribution of observations with %s", feature))
     legend('topleft', c("Has PCOS", "Doesn't have PCOS"), fill=c("red", "blue"))
   }
   else
@@ -29,10 +27,12 @@ for(feature in demographic_features)
          y = PCOS_data[, feature],
          xlab = "PCOS",
          ylab = feature,
-         col = c("blue", "red"))
+         col = c("blue", "red"),
+         main = sprintf("Box Plot of %s", feature))
     hist(PCOS_data[, feature],
          xlab = feature,
          ylab = "Frequency",
-         col = "blue")
+         col = "blue",
+         main = sprintf("Histogram of %s", feature))
   }
 }
