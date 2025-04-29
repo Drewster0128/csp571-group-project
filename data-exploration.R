@@ -6,6 +6,8 @@ demographic_features <- c("Age (yrs)", "Weight (Kg)", "Height(Cm)", "BMI", "`Blo
 demographic_data <- PCOS_data[, demographic_features]
 Y <- PCOS_data$`PCOS (Y/N)`
 
+par(mfrow = c(3,3))
+
 for(feature in demographic_features)
 {
   if(feature %in% categorical_features)
