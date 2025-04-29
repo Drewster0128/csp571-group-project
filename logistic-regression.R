@@ -2,11 +2,14 @@
 library(leaps)
 library(bestglm)
 library(iterators)
+library(boot)
+library(pROC)
 
-#foward selection on PCOS_data for logistic regression
+#forward selection on PCOS_data for logistic regression
 #we will use AIC as the chosen metric
 available_predictors <- colnames(PCOS_data)[!colnames(PCOS_data) %in% c("PCOS (Y/N)")]
 chosen_predictors <- c()
+chosen_models <- c()
 for(i in 1:(ncol(PCOS_data) -1))
 {
   min_aic <- NULL
@@ -23,8 +26,173 @@ for(i in 1:(ncol(PCOS_data) -1))
     }
   }
   chosen_predictors <- append(chosen_predictors, min_predictors)
-  print(chosen_predictors)
+  chosen_models <- append(chosen_models, list(min_model))
   available_predictors <- available_predictors[!available_predictors %in% chosen_predictors]
 }
+par(mfrow= c(1,1))
+#amongst 47 models, get training accuracy, validation accuracy, and AIC
+training_accuracy_list <- c()
+validation_accuracy_list <- c()
+aic_list <- c()
+training_auc_list <- c()
+validation_auc_list <- c()
+for(p in 1:length(chosen_models))
+{
+  training_predictions <- predict(chosen_models[[p]], newdata = train_data[, -1], type="response")
+  training_predictions <- ifelse(training_predictions >= 0.5, 1, 0)
+  training_accuracy <- mean(ifelse(train_data$`PCOS (Y/N)` == training_predictions, 1, 0))
+  training_accuracy_list <- append(training_accuracy_list, training_accuracy)
+  
+  validation_predictions <- predict(chosen_models[[p]], newdata = validation_data[, -1], type="response")
+  validation_predictions <- ifelse(validation_predictions >= 0.5, 1, 0)
+  validation_accuracy <- mean(ifelse(validation_data$`PCOS (Y/N)` == validation_predictions, 1, 0))
+  validation_accuracy_list <- append(validation_accuracy_list, validation_accuracy)
+  
+  aic_list <- append(aic_list, chosen_models[[p]]$aic)
+  
+  training_area_under_curve <- auc(roc(train_data$`PCOS (Y/N)`, training_predictions))
+  training_auc_list <- append(training_auc_list, training_area_under_curve)
+  
+  validation_area_under_curve <- auc(roc(validation_data$`PCOS (Y/N)`, validation_predictions))
+  validation_auc_list <- append(validation_auc_list, validation_area_under_curve)
+}
+
+#calculate AUC
+
+#plot training accuracy and validation accuracy with number of predictors as the x axis
+
+#line for training accuracy
+plot(
+  x = 1:length(chosen_models),
+  y = training_accuracy_list,
+  xlab = "Number of predictors",
+  ylab = "Classification Accuracy",
+  main = "Forward Selection on Logistic Regression",
+  type = "l",
+  col = "red"
+)
+
+#points for training accuracy
+points(
+  x = 1:length(chosen_models),
+  y = training_accuracy_list,
+  col = "red"
+)
+
+#line for validation accuracy
+lines(
+  x = 1:length(chosen_models),
+  y = validation_accuracy_list,
+  col = "blue"
+)
+
+#points for validation accuracy
+points(
+  x = 1:length(chosen_models),
+  y = validation_accuracy_list,
+  col = "blue"
+)
+
+#add legend
+legend("topleft",
+       legend = c("Training", "Validation"),
+       fill = c("red", "blue"))
+
+#plot for AUC
+plot(
+  x = 1:length(chosen_models),
+  y = training_auc_list,
+  col = "red",
+  xlab = "Number of predictors",
+  ylab = "AUC",
+  main = "AUC Forward Selection on Logistic Regression",
+  type = "l"
+)
+points(
+  x = 1:length(chosen_models),
+  y = training_auc_list,
+  col = "red"
+)
+
+lines(
+  x = 1:length(chosen_models),
+  y = validation_auc_list,
+  col = "blue"
+)
+points(
+  x = 1:length(chosen_models),
+  y = validation_auc_list,
+  col = "blue"
+)
+
+legend("topleft",
+       legend = c("Training", "Validation"),
+       fill = c("red", "blue"))
 
 
+
+#plot for AIC
+plot(
+  x = 1:length(chosen_models),
+  y = sapply(1:length(chosen_models), function(p) chosen_models[[p]]$aic),
+  xlab = "Number of predictors",
+  ylab = "AIC",
+  main = "AIC on Forward Selection for Logistic Regression",
+  type = "l"
+)
+points(
+  x = 1:length(chosen_models),
+  y = sapply(1:length(chosen_models), function(p) chosen_models[[p]]$aic)
+)
+
+classification_cost<- function(observed, pred.p) {
+  predictions <- ifelse(pred.p >= 0.5, 1, 0)
+  accuracy <- mean(ifelse(observed == predictions, 1, 0))
+  cost <- 1 - accuracy
+  return(cost)
+}
+
+auc_cost <- function(observed, pred.p) {
+  predictions <- ifelse(pred.p >= 0.5, 1, 0)
+  area_under_curve <- auc(roc(observed, predictions))
+  return(1 - area_under_curve)
+}
+
+#assess with 10 fold cross validation on accuracy
+cv_err_list <- sapply(1:length(chosen_models), function(p) {
+  cv.glm(train_data, chosen_models[[p]], K = 10, cost = classification_cost)$delta[1]
+})
+
+
+#plot cv-error for each number of predictors
+plot(
+  x = 1:length(chosen_models),
+  y = 1 - cv_err_list,
+  xlab = "Number of predictors",
+  ylab = "CV Accuracy",
+  main = "10-fold Cross Validation Accuracy for Forward Selection Logistic Regression",
+  type = "l"
+)
+points(
+  x = 1:length(chosen_models),
+  y = 1 - cv_err_list
+)
+
+#assess with 10 fold cross validation on AUC
+cv_auc_cost_list <- sapply(1:length(chosen_models), function(p) {
+  cv.glm(train_data, chosen_models[[p]], K = 10, cost = auc_cost)$delta[1]
+})
+
+#plot cv-auc for each number of predictors
+plot(
+  x = 1:length(chosen_models),
+  y = 1 - cv_auc_cost_list,
+  xlab = "Number of predictors",
+  ylab = "CV AUC",
+  main = "10-fold CV AUC for Forward Selection on Logisitc Regression",
+  type = "l"
+)
+points(
+  x = 1:length(chosen_models),
+  y = 1 - cv_auc_cost_list
+)
