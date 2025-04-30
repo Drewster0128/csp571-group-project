@@ -7,7 +7,7 @@ chosen_predictors <- c()
 chosen_knn <- c()
 for(i in 1:(ncol(PCOS_data) - 1))
 {
-  max_precision <- NULL
+  max_recall_accuracy <- NULL
   max_predictors <- NULL
   max_knn <- NULL
   for(k in 1:100)
@@ -20,18 +20,22 @@ for(i in 1:(ncol(PCOS_data) - 1))
         cl = as.factor(train_data$`PCOS (Y/N)`),
         k = k
       )
-      #calculate precision
+      #calculate recall + accuracy
       cm <- confusionMatrix(k_predictions, as.factor(validation_data$`PCOS (Y/N)`))
       tp <- cm$table[2,2]
-      fp <- cm$table[2,1]
-      precision <- tp/(tp + fp)
-      precision <- ifelse(!is.nan(precision), precision, 0)
+      fn <- cm$table[1,2]
+      recall <- tp/(tp + fn)
+      recall <- ifelse(!is.nan(recall), recall, 0)
       
-      if(is.null(max_precision) || max_precision < precision)
+      accuracy <- (tp + cm$table[1,1])/sum(cm$table)
+
+      recall_accuracy <- accuracy + recall
+      
+      if(is.null(max_recall_accuracy) || max_recall_accuracy < recall_accuracy)
       {
-        max_precision <- precision
+        max_recall_accuracy <- recall_accuracy
         max_predictors <- x
-        max_knn <- c(k =k,pred = list(k_predictions))
+        max_knn <- c(k =k,pred = list(k_predictions), coef = c(chosen_predictors, max_predictors))
       }
     }
   }
@@ -44,6 +48,7 @@ for(i in 1:(ncol(PCOS_data) - 1))
 accuracy_list <- c()
 auc_list <- c()
 best_k <- c()
+recall_list <- c()
 #get accuracy and AUC of knn on validation set
 for(p in 1:length(chosen_knn))
 {
@@ -51,10 +56,19 @@ for(p in 1:length(chosen_knn))
   accuracy <- mean(ifelse(validation_data$`PCOS (Y/N)` == predictions, 1, 0))
   auc <- auc(roc(validation_data$`PCOS (Y/N)`, predictions))
   
+  cm <- confusionMatrix(k_predictions, as.factor(validation_data$`PCOS (Y/N)`))
+  tp <- cm$table[2,2]
+  fn <- cm$table[1,2]
+  recall <- tp/(tp + fn)
+  recall <- ifelse(!is.nan(recall), recall, 0)
+  
   accuracy_list <- append(accuracy_list, accuracy)
   auc_list <- append(auc_list, auc)
   best_k <- append(best_k, chosen_knn[[p]]$k)
+  recall_list <- append(recall_list, recall)
 }
+
+par(mfrow = c(1,1))
 
 #plot accuracy
 plot(
@@ -64,12 +78,12 @@ plot(
   ylab = "Classification Accuracy",
   main = "Accuracy of KNN",
   type = "l",
-  col = "red"
+  col = "blue"
 )
 points(
   x = 1:length(chosen_knn),
   y = accuracy_list,
-  col = "red"
+  col = "blue"
 )
 
 #plot AUC
@@ -79,11 +93,25 @@ plot(x = 1:length(chosen_knn),
      ylab = "AUC",
      main = "AUC of KNN",
      type = "l",
-     col = "red")
+     col = "blue")
 points(
   x = 1:length(chosen_knn),
   y = auc_list,
-  col = "red"
+  col = "blue"
+)
+
+#plot recall
+plot(x = 1:length(chosen_knn),
+     y = recall_list,
+     xlab = "Number of predictors",
+     ylab = "Recall",
+     main = "Recall for KNN",
+     type = "l",
+     col = "blue")
+points(
+  x = 1:length(chosen_knn),
+  y = recall_list,
+  col = "blue"
 )
 
 #plot best k
@@ -93,9 +121,25 @@ plot(x = 1:length(chosen_knn),
      ylab = "Best Number of Neighbors",
      main = "Best Number of Neighbors for KNN",
      type = "l",
-     col = "red")
+     col = "blue")
 points(
   x = 1:length(chosen_knn),
   y = best_k,
-  col = "red"
+  col = "blue"
 )
+
+#pick best knn model
+#score based on accuracy + recall
+best_knn_score <- NULL
+best_knn_model <- NULL
+
+for(p in 1:length(chosen_knn))
+{
+  score <- accuracy_list[p] + recall_list[p]
+  
+  if(is.null(best_knn_score) || score > best_knn_score)
+  {
+    best_knn_score <- score
+    best_knn_model <- chosen_knn[[p]]
+  }
+}
