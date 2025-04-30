@@ -39,6 +39,76 @@ log_test_auc <- auc(roc(test_data$`PCOS (Y/N)`, log_test_predictions))
 knn_test_auc <- auc(roc(test_data$`PCOS (Y/N)`, knn_test_predictions))
 rf_test_auc <- auc(roc(test_data$`PCOS (Y/N)`, rf_test_predictions))
 
+tp <- function(predictions, actual) {
+  return(sum(sapply(1:length(predictions), function(i) {
+    if(predictions[i] == 1 && actual[i] == 1)
+    {
+      return(1)
+    }
+    else
+    {
+      return(0)
+    }
+  })))
+}
+
+fp <- function(predictions, actual) {
+  return(sum(sapply(1:length(predictions), function(i) {
+    if(predictions[i] == 1 && actual[i] == 0)
+    {
+      return(1)
+    }
+    else
+    {
+      return(0)
+    }
+  })))
+}
+
+fn <- function(predictions, actual) {
+  return(sum(sapply(1:length(predictions), function(i) {
+    if(predictions[i] == 0 && actual[i] == 1)
+    {
+      return(1)
+    }
+    else
+    {
+      return(0)
+    }
+  })))
+}
+
+#tp
+rf_test_tp <- tp(rf_test_predictions, test_data$`PCOS (Y/N)`)
+log_test_tp <- tp(log_test_predictions, test_data$`PCOS (Y/N)`)
+knn_test_tp <- tp(knn_test_predictions, test_data$`PCOS (Y/N)`)
+
+#fp
+rf_test_fp <- fp(rf_test_predictions, test_data$`PCOS (Y/N)`)
+log_test_fp <- fp(log_test_predictions, test_data$`PCOS (Y/N)`)
+knn_test_fp <- fp(knn_test_predictions, test_data$`PCOS (Y/N)`)
+
+#fn
+rf_test_fn <- fn(rf_test_predictions, test_data$`PCOS (Y/N)`)
+log_test_fn <- fn(log_test_predictions, test_data$`PCOS (Y/N)`)
+knn_test_fn <- fn(knn_test_predictions, test_data$`PCOS (Y/N)`)
+
+#precision
+rf_test_precision <- rf_test_tp / (rf_test_tp + rf_test_fp)
+log_test_precision <- log_test_tp / (log_test_tp + log_test_fp)
+knn_test_precision <- knn_test_tp / (knn_test_tp + knn_test_fp)
+
+#recall
+rf_test_recall <- rf_test_tp / (rf_test_tp + rf_test_fn)
+log_test_recall <- log_test_tp / (log_test_tp + log_test_fn)
+knn_test_recall <- knn_test_tp / (knn_test_tp + knn_test_fn)
+
+#f1
+rf_test_f1 <- (2 * rf_test_precision * rf_test_recall) / (rf_test_precision + rf_test_recall)
+log_test_f1 <- (2 * log_test_precision * log_test_recall) / (log_test_precision + log_test_recall)
+knn_test_f1 <- (2 * knn_test_precision * knn_test_recall) / (knn_test_precision + knn_test_recall)
+
+
 rename_features <- function(features) 
 {
   return(sapply(features, function(column_name) {
@@ -118,3 +188,36 @@ auc_plot <- barplot(
 )
 text(auc_plot, 0, round(auc_list, 2),cex=1,pos=3)
 
+#plot bar-graph of best model precision
+par()
+precision_list <- c(log_test_precision, rf_test_precision, knn_test_precision)
+precision_plot <- barplot(
+  precision_list,
+  names.arg = c("Logistic Regression", "Random Forest", "KNN"),
+  xlab = "Model Type",
+  ylab = "Test Precision",
+  main = "Test Precision on Models"
+)
+text(precision_plot, 0, round(precision_list, 2), cex = 1, pos = 3)
+
+#plot bar-graph of best model recall
+recall_list <- c(log_test_recall, rf_test_recall, knn_test_recall)
+recall_plot <- barplot(
+  recall_list,
+  names.arg = c("Logistic Regression", "Random Forest", "KNN"),
+  xlab = "Model Type",
+  ylab = "Test Recall",
+  main = "Test Recall on Models"
+)
+text(recall_plot, 0, round(recall_list, 2), cex = 1, pos = 3)
+
+#plot bar-graph of best model f1
+f1_list <- c(log_test_f1, rf_test_f1, knn_test_f1)
+f1_plot <- barplot(
+  f1_list,
+  names.arg = c("Logistic Regression", "Random Forest", "KNN"),
+  xlab = "Model Type",
+  ylab = "Test F1",
+  main = "Test F1 on Models"
+)
+text(f1_plot, 0, round(f1_list, 2), cex = 1, pos = 3)
